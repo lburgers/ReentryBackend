@@ -1,13 +1,14 @@
-const express = require('express');
 const jwt = require('jsonwebtoken');
+const express = require('express');
 const router = express.Router();
 
-const employerService = require('./employer.service');
+const employeeService = require('./employee.service');
 
 // simple CRUD REST api
 // routes
 router.post('/authenticate', authenticate);
 router.post('/create', create);
+router.get('/search', search);
 router.get('/:id', getById);
 router.put('/:id', update);
 router.delete('/:id', _delete);
@@ -30,30 +31,32 @@ const checkToken = (req) => {
 }
 
 function authenticate(req, res, next) {
-    employerService.authenticate(req.body)
+    employeeService.authenticate(req.body)
         .then(user => user ? res.json(user) : res.status(400).json({ message: 'Username or password is incorrect' }))
         .catch(err => next(err));
 }
 
 function create(req, res, next) {
-    employerService.create(req.body)
+    employeeService.create(req.body)
         .then(() => res.json({}))
         .catch(err => next(err));
 }
 
+function search(req, res, next) {
+    employeeService.search(req.query.q)
+        .then(users => users ? res.json(users) : res.sendStatus(404))
+        .catch(err => next(err))
+}
+
 function getById(req, res, next) {
-    if (checkToken(req)) {
-        employerService.getById(req.params.id)
-            .then(user => user ? res.json(user) : res.sendStatus(404))
-            .catch(err => next(err));
-    } else {
-        next('invalid token')
-    }
+    employeeService.getById(req.params.id)
+        .then(user => user ? res.json(user) : res.sendStatus(404))
+        .catch(err => next(err));
 }
 
 function update(req, res, next) {
     if (checkToken(req)) {
-        employerService.update(req.params.id, req.body)
+        employeeService.update(req.params.id, req.body)
             .then(() => res.json({}))
             .catch(err => next(err));
     } else {
@@ -63,7 +66,7 @@ function update(req, res, next) {
 
 function _delete(req, res, next) {
     if (checkToken(req)) {
-        employerService.delete(req.params.id)
+        employeeService.delete(req.params.id)
             .then(() => res.json({}))
             .catch(err => next(err));
     } else {

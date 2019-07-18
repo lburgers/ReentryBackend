@@ -283,7 +283,7 @@ lodash.set@^4.0.0:
   version "4.3.2"
   resolved "https://registry.yarnpkg.com/lodash.set/-/lodash.set-4.3.2.tgz#d8757b1da807dde24816b0d6a84bea1a76230b23"
 
-lodash@^4.17.11:
+lodash@^4.17.11, lodash@^4.17.4:
   version "4.17.11"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
 
@@ -403,6 +403,12 @@ parseurl@~1.3.3:
 path-to-regexp@0.1.7:
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
+
+pdffiller-stream@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/pdffiller-stream/-/pdffiller-stream-0.2.0.tgz#4ad8f2c67f9203e011c6755ab570dce4f7a170de"
+  dependencies:
+    lodash "^4.17.4"
 
 proxy-addr@~2.0.5:
   version "2.0.5"
