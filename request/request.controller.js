@@ -7,6 +7,7 @@ const requestService = require('./request.service');
 // simple CRUD REST api
 // routes
 router.post('/create', create);
+router.post('/sign', sign);
 router.get('/getAll', getAll);
 router.get('/viewForm', viewForm);
 router.get('/:id', getById);
@@ -37,6 +38,13 @@ function create(req, res, next) {
         .catch(err => next(err));
 }
 
+function sign(req, res, next) {
+    const user_id = getUserId(req)
+    requestService.sign(req.body.id, req.body.type, user_id)
+        .then(url => res.json({url}))
+        .catch(err => next(err));
+}
+
 function getById(req, res, next) {
     const user_id = getUserId(req)
     requestService.getById(req.params.id, user_id)
@@ -53,9 +61,9 @@ function getAll(req, res, next) {
 function viewForm(req, res, next) {
     const user_id = getUserId(req)
     requestService.generateForm(req.query.id, req.query.type, user_id)
-        .then(pdfForm => {
-            if (pdfForm) {
-                res.end(pdfForm);
+        .then(response => {
+            if (response.pdf) {
+                res.end(response.pdf);
             } else {
                 res.sendStatus(404)
             }

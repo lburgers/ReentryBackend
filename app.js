@@ -12,7 +12,9 @@ const config = require('./config.json');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
-app.use(cors()); 
+app.use(cors({
+	origin: 'https://reentryfrontend.lukasburger.now.sh'
+})); 
 
 // use JWT auth to secure the api
 app.use(jwt());

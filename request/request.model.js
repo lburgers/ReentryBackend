@@ -12,6 +12,8 @@ let RequestSchema = new Schema({
     employer_id: { type: String, required: true },
     employee_id: { type: String, required: true },
     stage: { type: Number, required: true },
+    sign_easy_pending_id: { type: Number, required: false },
+    sign_easy_completed_id: { type: Number, required: false },
     gave_information_date: { type: String, required: false },
     offered_job_date: { type: String, required: false },
     hired_date: { type: String, required: false },
