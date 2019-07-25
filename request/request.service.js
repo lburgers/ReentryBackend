@@ -10,6 +10,7 @@ module.exports = {
     getById,
     generateForm,
     sign,
+    signEasyWebhook,
     getAll,
     create,
     update,
@@ -26,8 +27,28 @@ const checkPermissions = (request, user_id) => {
     }
 }
 
+async function signEasyWebhook(body) {
+    const file_type = body.data.id == 3966912 ? '8850' : '9061'
+
+    const request_id = body.data.name.split('-')[0]
+    const request = await Request.findById(request_id);
+    if (!request) throw 'Request not found';
+    if (body.metadata.event_type === 'rs.completed') {
+        // if the request is waiting on signatures bump the stage to 3 (completed)
+        if (request.stage == 2) {
+            Object.assign(request, { [file_type]: { ...request[file_type], sign_easy_completed_id: body.data.signed_file_id}, stage: 3 }); 
+            await request.save();           
+        }
+    } else if (body.metadata.event_type === 'rs.signed') {
+
+        request[file_type].signed_by.push(body.metadata.event_user)
+        await request.save();           
+    }
+}
+
 async function sign(id, type, user_id) {
     const request = await getById(id, user_id)
+    if (request.stage < 1) throw 'request not ready for signatures'
     const employer = await Employer.findById(request.employer_id)
     const employee = await Employee.findById(request.employee_id)
     const formData = buildFormData(employer, employee, request, type)
@@ -36,19 +57,19 @@ async function sign(id, type, user_id) {
     }).map((key) => {
         return { label: key, value: formData[key], font_size: 11 }
     })
-    let sign_easy_pending_id = request.sign_easy_pending_id
+    let sign_easy_pending_id = request[type].sign_easy_pending_id
     const user_type = (user_id == employee._id) ? 'employee' : 'employer'
 
     try { 
         if (!sign_easy_pending_id) {
-            console.log('1')
+
             const upload_response = await axios.post('https://api-ext.getsigneasy.com/v1/files/pending/template/',
             {
                 template_file_id: signEasyID(type),
                 recipients: [{email: `${employee.email}`, first_name: `${employee.first_name}`, last_name: `${employee.last_name}`, role_id: 2},
                              {email: `${employer.email}`, first_name: `${employer.employer_name}`, last_name: '', role_id: 1}],
                 is_ordered: false,
-                name: `${request._id}`,
+                name: `${request._id}-${type}`,
                 embedded_signing: true,
                 merge_fields: merge_fields,
             },
@@ -58,13 +79,13 @@ async function sign(id, type, user_id) {
                 "Content-Type": 'application/json',
             }})
             sign_easy_pending_id = upload_response.data.pending_file_id
-            await update(id, {sign_easy_pending_id: sign_easy_pending_id}, user_id)
+            await update(id, {[type]: {...request[type], sign_easy_pending_id}, stage: 2}, user_id)
         }
-            console.log('2')
+
         const embedded_response = await axios.post(`https://api-ext.getsigneasy.com/v1/files/pending/${sign_easy_pending_id}/signing/url/`,
         {
             recipient_email: user_type == 'employee' ? employee.email : employer.email,
-            // redirect_url:,
+            redirect_url: `${config.client_url}/request?id=${request._id}`,
             allow_decline: false,
         },
         { 
@@ -72,6 +93,7 @@ async function sign(id, type, user_id) {
             'Authorization': `Bearer ${config.SIGNEASY_API_KEY}`,
             "Content-Type": 'application/json',
         }})
+
         return embedded_response.data.url
     } catch (e) { return e }
 }

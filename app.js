@@ -7,13 +7,13 @@ const mongoose = require('mongoose');
 
 const jwt = require('./lib/jwt');
 const errorHandler = require('./lib/error-handler');
-const config = require('./config.json');
+const config = require('./config.js');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 app.use(cors({
-	origin: 'https://reentryfrontend.lukasburger.now.sh'
+	origin: config.client_url,
 })); 
 
 // use JWT auth to secure the api

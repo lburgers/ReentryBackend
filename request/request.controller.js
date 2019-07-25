@@ -8,6 +8,7 @@ const requestService = require('./request.service');
 // routes
 router.post('/create', create);
 router.post('/sign', sign);
+router.post('/signHook', signHook);
 router.get('/getAll', getAll);
 router.get('/viewForm', viewForm);
 router.get('/:id', getById);
@@ -42,6 +43,12 @@ function sign(req, res, next) {
     const user_id = getUserId(req)
     requestService.sign(req.body.id, req.body.type, user_id)
         .then(url => res.json({url}))
+        .catch(err => next(err));
+}
+
+function signHook(req, res, next) {
+    requestService.signEasyWebhook(req.body)
+        .then(() => res.json({}))
         .catch(err => next(err));
 }
 
