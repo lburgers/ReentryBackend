@@ -29,7 +29,7 @@ const checkPermissions = (request, user_id) => {
 
 async function signEasyWebhook(body) {
     const file_type = body.data.id == 3966912 ? '8850' : '9061'
-
+    console.log(body)
     const request_id = body.data.name.split('-')[0]
     const request = await Request.findById(request_id);
     if (!request) throw 'Request not found';
