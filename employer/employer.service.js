@@ -71,6 +71,13 @@ async function update(id, userParam) {
     Object.assign(employer, userParam);
 
     await employer.save();
+
+    const { hash, ...userWithoutHash } = employer.toObject();
+    const token = jwt.sign({ sub: employer.id }, config.secret, { expiresIn: '4h' });
+    return {
+        ...userWithoutHash,
+        token
+    };
 }
 
 async function _delete(id) {

@@ -28,8 +28,7 @@ const checkPermissions = (request, user_id) => {
 }
 
 async function signEasyWebhook(body) {
-    const file_type = body.data.id == 3966912 ? '8850' : '9061'
-    console.log(body)
+    const file_type = body.data.name.split('-')[1].split('.')[0]
     const request_id = body.data.name.split('-')[0]
     const request = await Request.findById(request_id);
     if (!request) throw 'Request not found';
@@ -49,14 +48,17 @@ async function signEasyWebhook(body) {
 async function sign(id, type, user_id) {
     const request = await getById(id, user_id)
     if (request.stage < 1) throw 'request not ready for signatures'
+
     const employer = await Employer.findById(request.employer_id)
     const employee = await Employee.findById(request.employee_id)
     const formData = buildFormData(employer, employee, request, type)
+
     let merge_fields = Object.keys(formData).filter(key => {
         return (key !== 'multi_check') ? true : false
     }).map((key) => {
         return { label: key, value: formData[key], font_size: 11 }
     })
+
     let sign_easy_pending_id = request[type].sign_easy_pending_id
     const user_type = (user_id == employee._id) ? 'employee' : 'employer'
 
@@ -79,7 +81,7 @@ async function sign(id, type, user_id) {
                 "Content-Type": 'application/json',
             }})
             sign_easy_pending_id = upload_response.data.pending_file_id
-            await update(id, {[type]: {...request[type], sign_easy_pending_id}, stage: 2}, user_id)
+            await update(id, {[type]: {...request[type], sign_easy_pending_id}}, user_id)
         }
 
         const embedded_response = await axios.post(`https://api-ext.getsigneasy.com/v1/files/pending/${sign_easy_pending_id}/signing/url/`,
@@ -147,7 +149,7 @@ async function getAll(userQuery) {
         const response = {
             ...request._doc,
             employer_name: employer.employer_name,
-            employee_name: `${employee.first_name} ${employee.last_name}`,
+            employee_name: `${request.employee_name}`,
         }
         return response
     })
@@ -155,28 +157,33 @@ async function getAll(userQuery) {
 }
 
 async function create(userParam) {
-    // TODO: calculate stage
-    // TODO: notify employee of request
+
+    // TODO: notify employee of request over email
     let employee
     let employer
-    if (await Request.findOne({ employer_id: userParam.employer_id }) && await Request.findOne({ employee_id: userParam.employee_id }))  {
-        throw ' this request already exists ';
+    if (await Request.findOne({ employer_id: userParam.employer_id }) && 
+        await Request.findOne({ 'employee.phone_number': userParam.phone_number }))  {
+
+        throw 'this request already exists ';
     }
     try {
         employer = await Employer.findById(userParam.employer_id)
-        employee = await Employee.findById(userParam.employee_id)
-        if (!employer || !employee) {
-            throw 'Employer or employee does not exist'
+        if (!employer) {
+            throw 'Employer does not exist'
         }
     } catch (e) {
-        throw 'Employer or employee does not exist'
+        throw 'Employer does not exist'
     }
+
+    userParam.stage = 0
+    userParam.employee_email = userParam.email
+    userParam.employee_phone_number = userParam.phone_number
 
     const request = new Request(userParam);
 
     smsNotify({
-        phone_number: employee.employer_name,
-        message: `${employer.name} has requested that you fill out a Work Opportunity form. Go to ${config.client_url}/requests/${request._id} to respond.`
+        phone_number: userParam.phone_number,
+        message: `${employer.employer_name} has requested that you fill out a Work Opportunity form. Go to ${config.client_url}/requests/${request._id} to respond.`
     })
 
     // save request
@@ -184,7 +191,7 @@ async function create(userParam) {
 }
 
 async function update(id, userParam, user_id) {
-    // TODO: calculate stage
+
     const request = await Request.findById(id);
     // validate
     if (!request) throw 'Request not found';

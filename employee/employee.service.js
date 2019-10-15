@@ -1,6 +1,7 @@
 const config = require('../config.js');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const Request = require('../request/request.model');
 const Employee = require('./employee.model');
 const Employer = require('../employer/employer.model');
 
@@ -90,8 +91,24 @@ async function create(userParam) {
     }
 
     const prefixes = createPrefixes(userParam)
-
     const employee = new Employee({ ...userParam, prefixes });
+
+
+    // look for pending requests for the employee
+    requests = await Request.find({ employee_id: undefined,
+                                    employee_email: employee.email,
+                                    employee_phone_number: employee.phone_number,  
+                                })
+
+    if (requests.length == 1) {
+        const request = requests[0]
+        // if pending request, add new employee id and increment stage
+        Object.assign(request, { 
+                                 employee_id: employee._id,
+                                 stage: 1,
+                                });
+        await request.save();
+    }
 
     // hash password
     if (userParam.password) {

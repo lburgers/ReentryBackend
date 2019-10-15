@@ -18,7 +18,7 @@ let EmployeeSchema = new Schema({
     hash: { type: String, required: true },
     createdDate: { type: Date, default: Date.now },
 
-    ex_felon: {type: Boolean, default: false, required: true},
+    ex_felon: {type: Boolean, default: false, required: false},
 });
 
 EmployeeSchema.index({

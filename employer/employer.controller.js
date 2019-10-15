@@ -38,7 +38,10 @@ function authenticate(req, res, next) {
 function create(req, res, next) {
     employerService.create(req.body)
         .then(() => res.json({}))
-        .catch(err => next(err));
+            .catch(err => {
+                console.log(err)
+                next(err)
+            });
 }
 
 function getById(req, res, next) {
@@ -54,7 +57,7 @@ function getById(req, res, next) {
 function update(req, res, next) {
     if (checkToken(req)) {
         employerService.update(req.params.id, req.body)
-            .then(() => res.json({}))
+            .then((user) => res.json(user))
             .catch(err => next(err));
     } else {
         next('invalid token')
