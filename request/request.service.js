@@ -32,15 +32,20 @@ async function signEasyWebhook(body) {
     const request_id = body.data.name.split('-')[0]
     const request = await Request.findById(request_id);
     if (!request) throw 'Request not found';
+
+    console.log(body.metadata.event_type, file_type, request_id)
+
     if (body.metadata.event_type === 'rs.completed') {
         // if the request is waiting on signatures bump the stage to 3 (completed)
         if (request.stage == 2) {
             Object.assign(request, { [file_type]: { ...request[file_type], sign_easy_completed_id: body.data.signed_file_id}, stage: 3 }); 
+            console.log(request)
             await request.save();           
         }
     } else if (body.metadata.event_type === 'rs.signed') {
 
         request[file_type].signed_by.push(body.metadata.event_user)
+        console.log(request)
         await request.save();           
     }
 }
@@ -87,7 +92,7 @@ async function sign(id, type, user_id) {
         const embedded_response = await axios.post(`https://api-ext.getsigneasy.com/v1/files/pending/${sign_easy_pending_id}/signing/url/`,
         {
             recipient_email: user_type == 'employee' ? employee.email : employer.email,
-            redirect_url: `${config.client_url}/request?id=${request._id}`,
+            redirect_url: `${config.client_url}/app`,
             allow_decline: false,
         },
         { 
@@ -183,7 +188,7 @@ async function create(userParam) {
 
     smsNotify({
         phone_number: userParam.phone_number,
-        message: `${employer.employer_name} has requested that you fill out a Work Opportunity form. Go to ${config.client_url}/requests/${request._id} to respond.`
+        message: `${employer.employer_name} has requested that you fill out a Work Opportunity form. Go to ${config.client_url}/signup?type=employee to respond.`
     })
 
     // save request
