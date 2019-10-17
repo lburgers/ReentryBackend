@@ -28,6 +28,7 @@ const checkPermissions = (request, user_id) => {
 }
 
 async function signEasyWebhook(body) {
+    console.log(body)
     const file_type = body.data.name.split('-')[1].split('.')[0]
     const request_id = body.data.name.split('-')[0]
     const request = await Request.findById(request_id);
