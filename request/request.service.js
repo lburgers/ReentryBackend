@@ -38,8 +38,8 @@ async function signEasyWebhook(body) {
 
     if (body.metadata.event_type === 'rs.completed') {
         // if the request is waiting on signatures bump the stage to 3 (completed)
-        if (request.stage == 2) {
-            Object.assign(request, { [file_type]: { ...request[file_type], sign_easy_completed_id: body.data.signed_file_id}, stage: 3 }); 
+        if (request.stage == 1) {
+            Object.assign(request, { [file_type]: { ...request[file_type], sign_easy_completed_id: body.data.signed_file_id} }); 
             console.log(request)
             await request.save();           
         }
