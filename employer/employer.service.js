@@ -1,7 +1,9 @@
-const config = require('../config.json');
+const config = require('../config.js');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Employer = require('./employer.model');
+const Employee = require('../employee/employee.model');
+
 
 module.exports = {
     authenticate,
@@ -11,13 +13,19 @@ module.exports = {
     delete: _delete
 };
 
-// TODO: add better auth rules to all endpoints
+const checkExists = async (dict) => {
+    return (await Employee.findOne(dict)) || (await Employer.findOne(dict))
+}
 
-async function authenticate({ email, password }) {
-    const employer = await Employer.findOne({ email });
+async function authenticate({ email, phone_number, password }) {
+    let employer
+    if (!(employer = await Employer.findOne({ email }))) {
+        employer = await Employer.findOne({ phone_number });
+    }
+
     if (employer && bcrypt.compareSync(password, employer.hash)) {
         const { hash, ...userWithoutHash } = employer.toObject();
-        const token = jwt.sign({ sub: employer.id }, config.secret); // todo: add expiration
+        const token = jwt.sign({ sub: employer.id }, config.secret, { expiresIn: '4h' });
         return {
             ...userWithoutHash,
             token
@@ -30,10 +38,8 @@ async function getById(id) {
 }
 
 async function create(userParam) {
-    // TODO: add tighter rules/validaters
-    // validate
-    if (await Employer.findOne({ email: userParam.email })) {
-        throw 'username (email) "' + userParam.email + '" is already taken';
+    if (await checkExists({ email: userParam.email })) {
+        throw ' (email) "' + userParam.email + '" is already taken';
     }
 
     const employer = new Employer(userParam);
@@ -48,13 +54,12 @@ async function create(userParam) {
 }
 
 async function update(id, userParam) {
-    // TODO: add tighter rules/validaters
     const employer = await Employer.findById(id);
 
     // validate
     if (!employer) throw 'Employer not found';
-    if (employer.username !== userParam.username && await Employer.findOne({ email: userParam.email })) {
-        throw 'Employername "' + userParam.username + '" is already taken';
+    if (employer.email !== userParam.email && (await checkExists({ email: userParam.email })) ) {
+        throw 'Employername "' + userParam.email + '" is already taken';
     }
 
     // hash password if it was entered
@@ -66,6 +71,13 @@ async function update(id, userParam) {
     Object.assign(employer, userParam);
 
     await employer.save();
+
+    const { hash, ...userWithoutHash } = employer.toObject();
+    const token = jwt.sign({ sub: employer.id }, config.secret, { expiresIn: '4h' });
+    return {
+        ...userWithoutHash,
+        token
+    };
 }
 
 async function _delete(id) {

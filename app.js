@@ -7,10 +7,15 @@ const mongoose = require('mongoose');
 
 const jwt = require('./lib/jwt');
 const errorHandler = require('./lib/error-handler');
-const config = require('./config.json');
+const config = require('./config.js');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
+
+app.use(cors({
+	origin: config.client_url,
+})); 
+
 // use JWT auth to secure the api
 app.use(jwt());
 
@@ -30,16 +35,13 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 // Imports routes
 const employer = require('./employer/employer.controller'); 
-
-app.use(
-  cors()
-); 
-app.options("*", cors()); // include before other routes
-
+const employee = require('./employee/employee.controller'); 
+const request = require('./request/request.controller'); 
 
 // routes
 app.use('/employers', employer);
-
+app.use('/employees', employee);
+app.use('/requests', request);
 
 // start server
 const port = process.env.NODE_ENV === 'production' ? (process.env.PORT || 80) : 4000;
